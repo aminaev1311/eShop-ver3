@@ -1,44 +1,46 @@
-let products = [ {
-            id: 1,
-            title: 'macbook',
-            price: '100000'
-        }, 
-        {
-            id: 2,
-            title: 'mouse',
-            price: '1000'
-        },
-        {
-            id: 3,
-            title: 'bag',
-            price: '100'
-        },
-        {
-            id: 4,
-            title: 'pomodoro timer',
-            price: '1000'
-        }
-];
+const API = 'https://raw.githubusercontent.com/aminaev1311/online-store-api/master/responses/';
 
-let cart = [
-    {
-        id: 1,
-        title: 'macbook',
-        price: '100000',
-        quantity: 2
-    },
-    {
-        id: 4,
-        title: 'pomodoro timer',
-        price: '1000',
-        quantity: 1
-    },
-];
+// let products = [ {
+//             id: 1,
+//             title: 'macbook',
+//             price: '100000'
+//         }, 
+//         {
+//             id: 2,
+//             title: 'mouse',
+//             price: '1000'
+//         },
+//         {
+//             id: 3,
+//             title: 'bag',
+//             price: '100'
+//         },
+//         {
+//             id: 4,
+//             title: 'pomodoro timer',
+//             price: '1000'
+//         }
+// ];
+
+// let cart = [
+//     {
+//         id: 1,
+//         title: 'macbook',
+//         price: '100000',
+//         quantity: 2
+//     },
+//     {
+//         id: 4,
+//         title: 'pomodoro timer',
+//         price: '1000',
+//         quantity: 1
+//     },
+// ];
 
 class Item {
-    constructor({id, title, price}) {
-        this.id = id;
-        this.title = title;
+    constructor({id_product, product_name, price}) {
+        this.id = id_product;
+        this.title = product_name;
         this.price = price;
     }
 
@@ -48,8 +50,8 @@ class Item {
 }
 
 class ProductItem extends Item {
-    constructor({id, title, price, img="https://via.placeholder.com/200x150"}) {
-        super({id, title, price});
+    constructor({id_product, product_name, price, img="https://via.placeholder.com/200x150"}) {
+        super({id_product, product_name, price});
         this.img = img;
     }
 
@@ -67,8 +69,8 @@ class ProductItem extends Item {
 }
 
 class CartItem extends Item {
-    constructor({id, title, price, quantity, img="https://via.placeholder.com/50x50"}) {
-        super({id, title, price});
+    constructor({id_product, product_name, price, quantity, img="https://via.placeholder.com/50x50"}) {
+        super({id_product, product_name, price});
         this.quantity = quantity;
         this.img = img;
     }
@@ -101,6 +103,10 @@ class List {
         this._init();
     }
 
+    getData(url) {
+        return fetch(url).then( response => response.json()).catch( err => console.log(err) );
+    } 
+
     render() {
         console.log(this.list[this.constructor.name]);
         this.productsMarkUp = this.data.map( item => new this.list[this.constructor.name](item).render() );
@@ -115,7 +121,13 @@ class List {
 class ProductList extends List {
     constructor(container = '.products') {
         super(container);
-        this.data = products;
+        this.data = [];
+        this.getData(API + 'catalogData.json')
+            .then( data => {
+                this.data = data;
+                console.log(this.data);
+                this.render();
+            });
     }
 
     _init() {
@@ -129,7 +141,7 @@ class ProductList extends List {
     search(term) {
         let regExp = new RegExp(term, 'i');
         console.log(regExp);
-        this.data.forEach( ({id, title}) => {
+        this.data.forEach( ({id_product: id, product_name: title}) => {
             console.log(title);
             console.log(regExp.test(title));
             let itemElem = document.querySelector(`.product-item[data-id="${id}"]`);
@@ -148,7 +160,13 @@ class ProductList extends List {
 class CartList extends List {
     constructor(container = ".cart-items") {
         super(container);
-        this.data = cart;
+        this.data = [];
+        this.getData(API + 'getBasket.json')
+            .then( data => {
+                this.data = data.contents;
+                console.log(this.data);
+                this.render();
+            });
     }
 
     _init() {
@@ -164,10 +182,8 @@ let mapping = {
 }
 
 let list = new ProductList();
-list.render();
 console.log(list);
 let myCart = new CartList();
-myCart.render();
 console.log(myCart);
 console.log(myCart.container);
 console.log(document.querySelector(myCart.container));  
