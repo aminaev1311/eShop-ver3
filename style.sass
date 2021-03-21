@@ -1,0 +1,68 @@
+body
+    margin: 0
+    padding: 0
+
+.header
+    display: flex
+    justify-content: space-between
+    align-items: center
+    padding: 30px 40px
+    color: white
+    background: grey
+    &__right
+        display: flex
+
+.products-heading
+    text-align: center
+
+.products
+    display: flex
+    justify-content: space-between
+    gap: 40px
+    padding: 40px
+    flex-wrap: wrap
+
+.product-item
+    border: 1px solid gray
+    border-radius: 5px
+    box-shadow: 2px 2px 2px grey
+    &__desc
+        padding: 20px
+        display: flex
+        flex-direction: column
+        justify-content: space-around
+        align-items: center
+
+.invisible
+    display: none
+
+.cart
+    position: relative
+
+.cart-item
+    display: flex
+    margin-bottom: 10px
+    justify-content: space-between
+    color: black
+    &__left
+        display: flex
+    &__right
+        display: flex
+        flex-direction: column
+        justify-content: flex-start
+        align-items: center
+
+.cart-items
+    width: 350px
+    padding: 10px
+    position: absolute
+    top: 25px
+    right: 0px
+    background: white
+    color: grey
+    padding: 16px
+    box-shadow: grey 0px 0px 5px
+    border-radius: 5px
+
+.del-btn
+    align-self: flex-end
