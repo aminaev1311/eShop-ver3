@@ -98,6 +98,8 @@ class List {
     constructor(container, list = mapping) {
         this.container = container;
         this.list = list;
+        this.data = [];
+        this.products = [];
         this.productsMarkUp = [];
         this.markUp = '';
         this._init();
@@ -105,7 +107,13 @@ class List {
 
     getData(url) {
         return fetch(url).then( response => response.json()).catch( err => console.log(err) );
-    } 
+    }
+
+    handleData(myData) {
+        this.data = myData;
+        console.log(this.data);
+        this.render();
+    }
 
     render() {
         console.log(this.list[this.constructor.name]);
@@ -121,12 +129,9 @@ class List {
 class ProductList extends List {
     constructor(container = '.products') {
         super(container);
-        this.data = [];
         this.getData(API + 'catalogData.json')
             .then( data => {
-                this.data = data;
-                console.log(this.data);
-                this.render();
+                this.handleData(data);
             });
     }
 
@@ -160,19 +165,57 @@ class ProductList extends List {
 class CartList extends List {
     constructor(container = ".cart-items") {
         super(container);
-        this.data = [];
         this.getData(API + 'getBasket.json')
             .then( data => {
-                this.data = data.contents;
-                console.log(this.data);
-                this.render();
+                this.handleData(data.contents);
             });
     }
 
     _init() {
+        /**
+         * shows the cart pop-up when the cart button is clicked
+         */
         document.querySelector(".cart-btn").addEventListener('click', () => {
             document.querySelector(this.container).classList.toggle('invisible');
         });
+        //catch clicks inside the products div
+        document.querySelector(".products").addEventListener('click', event => {
+            console.log(event.target);
+            //if it is a buy button
+            if (event.target.classList.contains("buy-btn")) {
+                console.log("buy this good: " + event.target.dataset.id);
+                this.addProduct(+event.target.dataset.id);
+                this.updateCart();
+            } else {
+                console.log("INFORMATION: not a buy button. nothings happens when clicked");
+            }
+        });
+    }
+
+    addProduct(id) {
+        console.log("added to cart product with id: " + id);
+        //check if this product is already in the cart
+        let index = this.data.findIndex( (item) => {
+            return item.id_product == id;
+        } );
+        console.log(index);
+
+        if (index===-1) {
+            //if not in the cart, add to cart with quantity of 1
+            console.log("not in the cart. Adding");
+            let product = this.data.find( (item) => {
+                return item.id_product == id;
+            } );
+            console.log(product);
+            this.products.push(product);
+        } else {
+            //if in the cart, update quantity and total
+            console.log("in the cart.");
+        }
+    }
+
+    updateCart() {
+        console.log("Updating cart...");
     }
 }
 
