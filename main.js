@@ -38,9 +38,9 @@ const API = 'https://raw.githubusercontent.com/aminaev1311/online-store-api/mast
 // ];
 
 class Item {
-    constructor({id_product, product_name, price}) {
-        this.id = id_product;
-        this.title = product_name;
+    constructor({id, title, price}) {
+        this.id = id;
+        this.title = title;
         this.price = price;
     }
 
@@ -50,45 +50,45 @@ class Item {
 }
 
 class ProductItem extends Item {
-    constructor({id_product, product_name, price, img="https://via.placeholder.com/200x150"}) {
-        super({id_product, product_name, price});
+    constructor({id, title, price, img="https://via.placeholder.com/200x150"}) {
+        super({id, title, price});
         this.img = img;
     }
 
     render() {
         return `
-        <div class="product-item" data-id="${this.id}">
+        <div class="product-item" data-id="${this.id}" data-title="${this.title}" data-price="${this.price}">
             <img src="${this.img}+?text=${this.title}">
             <div class="product-item__desc">
                 <h3>${this.title}</h3>
                 <p>${this.price}</p>
-                <button class="buy-btn" data-id="${this.id}">Add to cart</button>
+                <button class="buy-btn" data-id="${this.id}" data-title="${this.title}" data-price="${this.price}">Add to cart</button>
             </div>
         </div>`;
     }
 }
 
 class CartItem extends Item {
-    constructor({id_product, product_name, price, quantity, img="https://via.placeholder.com/50x50"}) {
-        super({id_product, product_name, price});
+    constructor({id, title, price, quantity, img="https://via.placeholder.com/50x50"}) {
+        super({id, title, price});
         this.quantity = quantity;
         this.img = img;
     }
 
     render() {
         return `
-        <div class="cart-item" data-id="${this.id}">
+        <div class="cart-item" data-id="${this.id}" data-title="${this.title}" data-price="${this.price}" data-quantity="${this.quantity}">
             <div class="cart-item__left">
                 <img src="${this.img}+?text=${this.title}">
                 <div class="cart-item__desc">
                     <h3>${this.title}</h3>
-                    <h5>q-ty: ${this.quantity}</h5>
+                    <h5 class="cartItemQuantity">q-ty: ${this.quantity}</h5>
                     <p>each: ${this.price}</p>
                 </div>
             </div>
             <div class="cart-item__right">
-                <h3>${this.price*this.quantity}</h3>
-                <button class="del-btn" data-id="${this.id}">X</button>
+                <h3 class="cartItemTotalPrice">${this.price*this.quantity}</h3>
+                <button class="del-btn" data-id="${this.id}" data-title="${this.title}" data-price="${this.price}" data-quantity="${this.quantity}">X</button>
             </div>
         </div>`;
     }
@@ -99,7 +99,9 @@ class List {
         this.container = container;
         this.list = list;
         this.data = [];
+        this.rawData = [];
         this.products = [];
+        this.toRender = [];
         this.productsMarkUp = [];
         this.markUp = '';
         this._init();
@@ -111,13 +113,24 @@ class List {
 
     handleData(myData) {
         this.data = myData;
+        this.parseInput();
         console.log(this.data);
         this.render();
     }
 
+    parseInput() {
+        this.data.forEach( ({id_product, product_name, price}) => {
+            this.rawData.push({id: id_product, title: product_name, price: price}); 
+        });
+    }
+
     render() {
         console.log(this.list[this.constructor.name]);
-        this.productsMarkUp = this.data.map( item => new this.list[this.constructor.name](item).render() );
+        this.productsMarkUp = this.rawData.map( (item) => {
+            let productItem = new this.list[this.constructor.name](item);
+            this.products.push(productItem);
+            return productItem.render();
+        });
         console.log(this.productsMarkUp);
         this.markUp = this.productsMarkUp.reduce( (acc, curr) => acc += curr, '');
         document.querySelector(this.container).insertAdjacentHTML('beforeend', this.markUp);
@@ -171,6 +184,12 @@ class CartList extends List {
             });
     }
 
+    parseInput() {
+        this.data.forEach( ({id_product, product_name, price, quantity}) => {
+            this.rawData.push({id: id_product, title: product_name, price: price, quantity: quantity}); 
+        });
+    }
+
     _init() {
         /**
          * shows the cart pop-up when the cart button is clicked
@@ -183,39 +202,101 @@ class CartList extends List {
             console.log(event.target);
             //if it is a buy button
             if (event.target.classList.contains("buy-btn")) {
-                console.log("buy this good: " + event.target.dataset.id);
-                this.addProduct(+event.target.dataset.id);
-                this.updateCart();
+                console.log("buy this good: " + event.target.dataset.id +" "+ event.target.dataset.title);
+                this.addProduct(event.target);
+                this.updateCart(event.target);
             } else {
                 console.log("INFORMATION: not a buy button. nothings happens when clicked");
             }
         });
+
+        document.querySelector(".cart").addEventListener('click', event => {
+            console.log(event.target);
+            //if it is a buy button
+            if (event.target.classList.contains("del-btn")) {
+                console.log("delete this product: " + event.target.dataset.id);
+                this.removeProduct(event.target);
+                this.updateCart(event.target);
+            }
+        });
     }
 
-    addProduct(id) {
-        console.log("added to cart product with id: " + id);
+    addProduct(elem) {
+        console.log(elem);
+        const elemId = +elem.dataset.id;
+        const elemPrice = +elem.dataset.price;
+        const elemTitle = elem.dataset.title;
+
+        console.log("added to cart product with id: " + elemId +" "+ elemTitle);
         //check if this product is already in the cart
-        let index = this.data.findIndex( (item) => {
-            return item.id_product == id;
+        let index = this.products.findIndex( (item) => {
+            return item.id == elemId;
         } );
         console.log(index);
 
         if (index===-1) {
             //if not in the cart, add to cart with quantity of 1
             console.log("not in the cart. Adding");
-            let product = this.data.find( (item) => {
-                return item.id_product == id;
-            } );
-            console.log(product);
-            this.products.push(product);
+            let cartItem = new CartItem({id: elemId, title: elemTitle, price: elemPrice,  quantity: 1});
+            console.log(cartItem);
+            this.products.push(cartItem);
+            console.log(this.products);
+            this.toRender = [cartItem];
         } else {
             //if in the cart, update quantity and total
             console.log("in the cart.");
+            this.products[index].quantity++;
+            console.log(this.products);
         }
     }
 
-    updateCart() {
-        console.log("Updating cart...");
+    removeProduct(elem) {
+        console.log(elem);
+        const elemId = +elem.dataset.id;
+        const elemPrice = +elem.dataset.price;
+        const elemTitle = elem.dataset.title;
+        const elemQuantity = +elem.dataset.quantity;
+
+        let index = this.products.findIndex( (item) => {
+            return item.id == elemId;
+        } );
+        console.log(index);
+        this.products[index].quantity--;
+        console.log(this.products[index].quantity);
+        if (this.products[index].quantity===0) this.products.splice(index, 1)
+        console.log(this.products);
+    }
+
+    updateCart(elem) {
+        console.log("Updating cart element..." + elem);
+        console.log(elem);
+        const elemId = +elem.dataset.id;
+        const elemPrice = +elem.dataset.price;
+        const elemTitle = elem.dataset.title;
+        const elemQuantity = +elem.dataset.quantity;
+
+        let index = this.products.findIndex( (item) => {
+            return item.id == elemId;
+        } );
+        console.log(index);
+        //if the item is not in the cart, then remove from the mark-up
+        const cartItemElem = document.querySelector(`div.cart-item[data-id="${elemId}"]`);
+
+        if (cartItemElem) {
+            if (index===-1) {
+            cartItemElem.remove();
+            } else {
+                //if the item is in the cart, update quantity and total price in the cart item
+                console.log(elem);
+                // const cartItemElem = document.querySelector(`div.cart-item[data-id="${elemId}"]`);
+                cartItemElem.querySelector(`.cartItemQuantity`).textContent = this.products[index].quantity;
+                cartItemElem.querySelector(`.cartItemTotalPrice`).textContent = this.products[index].quantity*this.products[index].price;
+            }
+        }
+
+        this.toRender.forEach( cartItem => {
+            document.querySelector(this.container).insertAdjacentHTML('beforeend', cartItem.render() );
+        });
     }
 }
 
