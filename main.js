@@ -82,7 +82,7 @@ class CartItem extends Item {
                 <img src="${this.img}+?text=${this.title}">
                 <div class="cart-item__desc">
                     <h3>${this.title}</h3>
-                    <h5 class="cartItemQuantity">q-ty: ${this.quantity}</h5>
+                    <h5>q-ty: <span class="cartItemQuantity">${this.quantity}</span></h5>
                     <p>each: ${this.price}</p>
                 </div>
             </div>
@@ -204,9 +204,7 @@ class CartList extends List {
             if (event.target.classList.contains("buy-btn")) {
                 console.log("buy this good: " + event.target.dataset.id +" "+ event.target.dataset.title);
                 this.addProduct(event.target);
-                this.updateCart(event.target);
-            } else {
-                console.log("INFORMATION: not a buy button. nothings happens when clicked");
+                // this.updateCart(event.target);
             }
         });
 
@@ -216,7 +214,6 @@ class CartList extends List {
             if (event.target.classList.contains("del-btn")) {
                 console.log("delete this product: " + event.target.dataset.id);
                 this.removeProduct(event.target);
-                this.updateCart(event.target);
             }
         });
     }
@@ -236,26 +233,27 @@ class CartList extends List {
 
         if (index===-1) {
             //if not in the cart, add to cart with quantity of 1
-            console.log("not in the cart. Adding");
             let cartItem = new CartItem({id: elemId, title: elemTitle, price: elemPrice,  quantity: 1});
             console.log(cartItem);
             this.products.push(cartItem);
             console.log(this.products);
-            this.toRender = [cartItem];
+            //add this item to mark-up
+            // this.toRender = [cartItem];
+            document.querySelector(this.container).insertAdjacentHTML('beforeend', cartItem.render());
         } else {
-            //if in the cart, update quantity and total
+            //if in the cart, update quantity
             console.log("in the cart.");
             this.products[index].quantity++;
             console.log(this.products);
+            const cartItemElem = document.querySelector(`.cart-item[data-id="${elemId}"]`);
+            cartItemElem.querySelector(`.cartItemQuantity`).textContent = this.products[index].quantity;
+            cartItemElem.querySelector(`.cartItemTotalPrice`).textContent = this.products[index].quantity*this.products[index].price;
         }
     }
 
     removeProduct(elem) {
         console.log(elem);
         const elemId = +elem.dataset.id;
-        const elemPrice = +elem.dataset.price;
-        const elemTitle = elem.dataset.title;
-        const elemQuantity = +elem.dataset.quantity;
 
         let index = this.products.findIndex( (item) => {
             return item.id == elemId;
@@ -263,41 +261,47 @@ class CartList extends List {
         console.log(index);
         this.products[index].quantity--;
         console.log(this.products[index].quantity);
-        if (this.products[index].quantity===0) this.products.splice(index, 1)
+        const cartItemElem = document.querySelector(`.cart-item[data-id="${elemId}"]`);
+
+        if (this.products[index].quantity===0) {
+            this.products.splice(index, 1);//remove the product from an array
+            //remove it from the mark-up
+            cartItemElem.remove();
+        } else {
+            //update the mark-up to reflect the reduced quantity
+            cartItemElem.querySelector(`.cartItemQuantity`).textContent = this.products[index].quantity;
+            cartItemElem.querySelector(`.cartItemTotalPrice`).textContent = this.products[index].quantity*this.products[index].price;
+        }
         console.log(this.products);
     }
 
-    updateCart(elem) {
-        console.log("Updating cart element..." + elem);
-        console.log(elem);
-        const elemId = +elem.dataset.id;
-        const elemPrice = +elem.dataset.price;
-        const elemTitle = elem.dataset.title;
-        const elemQuantity = +elem.dataset.quantity;
+    // updateCart(elem) {
+    //     console.log("Updating cart element..." + elem);
+    //     console.log(elem);
+    //     const elemId = +elem.dataset.id;
 
-        let index = this.products.findIndex( (item) => {
-            return item.id == elemId;
-        } );
-        console.log(index);
-        //if the item is not in the cart, then remove from the mark-up
-        const cartItemElem = document.querySelector(`div.cart-item[data-id="${elemId}"]`);
+    //     let index = this.products.findIndex( (item) => {
+    //         return item.id == elemId;
+    //     } );
+    //     console.log(index);
+    //     //if the item is not in the cart, then remove from the mark-up
+    //     const cartItemElem = document.querySelector(`div.cart-item[data-id="${elemId}"]`);
 
-        if (cartItemElem) {
-            if (index===-1) {
-            cartItemElem.remove();
-            } else {
-                //if the item is in the cart, update quantity and total price in the cart item
-                console.log(elem);
-                // const cartItemElem = document.querySelector(`div.cart-item[data-id="${elemId}"]`);
-                cartItemElem.querySelector(`.cartItemQuantity`).textContent = this.products[index].quantity;
-                cartItemElem.querySelector(`.cartItemTotalPrice`).textContent = this.products[index].quantity*this.products[index].price;
-            }
-        }
+    //     if (cartItemElem) {
+    //         if (index===-1) {
+    //         cartItemElem.remove();
+    //         } else {
+    //             //if the item is in the cart, update quantity and total price in the cart item
+    //             console.log(elem);
+    //             cartItemElem.querySelector(`.cartItemQuantity`).textContent = this.products[index].quantity;
+    //             cartItemElem.querySelector(`.cartItemTotalPrice`).textContent = this.products[index].quantity*this.products[index].price;
+    //         }
+    //     }
 
-        this.toRender.forEach( cartItem => {
-            document.querySelector(this.container).insertAdjacentHTML('beforeend', cartItem.render() );
-        });
-    }
+    //     this.toRender.forEach( cartItem => {
+    //         document.querySelector(this.container).insertAdjacentHTML('beforeend', cartItem.render() );
+    //     });
+    // }
 }
 
 let mapping = {
