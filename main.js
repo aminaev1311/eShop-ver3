@@ -114,7 +114,6 @@ class List {
     handleData(myData) {
         this.data = myData;
         this.parseInput();
-        console.log(this.data);
         this.render();
     }
 
@@ -125,16 +124,13 @@ class List {
     }
 
     render() {
-        console.log(this.list[this.constructor.name]);
         this.productsMarkUp = this.rawData.map( (item) => {
             let productItem = new this.list[this.constructor.name](item);
             this.products.push(productItem);
             return productItem.render();
         });
-        console.log(this.productsMarkUp);
         this.markUp = this.productsMarkUp.reduce( (acc, curr) => acc += curr, '');
         document.querySelector(this.container).insertAdjacentHTML('beforeend', this.markUp);
-        console.log(this.markUp);
         return this.markUp;
     }
 }
@@ -151,17 +147,13 @@ class ProductList extends List {
     _init() {
         document.querySelector('.search__input').addEventListener('input', (event) => {
             let term = event.target.value;
-            console.log(term);
             this.search(term);
         });
     }
 
     search(term) {
         let regExp = new RegExp(term, 'i');
-        console.log(regExp);
-        this.data.forEach( ({id_product: id, product_name: title}) => {
-            console.log(title);
-            console.log(regExp.test(title));
+        this.rawData.forEach( ({id, title}) => {
             let itemElem = document.querySelector(`.product-item[data-id="${id}"]`);
             //show only products mathching the search criteria
             if (!regExp.test(title)) { //if the item title doesn't match the criteria hide it
@@ -190,77 +182,89 @@ class CartList extends List {
         });
     }
 
+    render() {
+        this.productsMarkUp = this.rawData.map( (item) => {
+            let productItem = new this.list[this.constructor.name](item);
+            this.products.push(productItem);
+            return productItem.render();
+        });
+        this.markUp = this.productsMarkUp.reduce( (acc, curr) => acc += curr, '');
+        document.querySelector(this.container).insertAdjacentHTML('beforeend', this.markUp);
+        
+        return this.markUp;
+    }
+
     _init() {
         /**
          * shows the cart pop-up when the cart button is clicked
          */
         document.querySelector(".cart-btn").addEventListener('click', () => {
-            document.querySelector(this.container).classList.toggle('invisible');
+            document.querySelector(this.container).classList.toggle('invisible');  
+            this.renderCartTotal();
+            this.handleEmptyCart();
         });
         //catch clicks inside the products div
         document.querySelector(".products").addEventListener('click', event => {
-            console.log(event.target);
             //if it is a buy button
             if (event.target.classList.contains("buy-btn")) {
-                console.log("buy this good: " + event.target.dataset.id +" "+ event.target.dataset.title);
                 this.addProduct(event.target);
                 // this.updateCart(event.target);
             }
         });
 
         document.querySelector(".cart").addEventListener('click', event => {
-            console.log(event.target);
             //if it is a buy button
             if (event.target.classList.contains("del-btn")) {
-                console.log("delete this product: " + event.target.dataset.id);
                 this.removeProduct(event.target);
             }
         });
     }
 
+    renderCartTotal() {
+        // document.querySelector(this.container).insertAdjacentHTML('beforeend', `<p id="total">The total is ${this.calculateTotal()}</p>`);
+        try {
+            document.querySelector('#total').remove();
+        } catch {
+            (err) => console.log(err);
+        }
+        document.querySelector(this.container).insertAdjacentHTML('beforeend', `<p id="total" style="text-align:right">The total is ${this.calculateTotal()}</p>`);
+    }
+
+    calculateTotal() {
+        return this.products.reduce( (acc, curr) => acc+=curr.price * curr.quantity, 0 );
+    }
+
     addProduct(elem) {
-        console.log(elem);
         const elemId = +elem.dataset.id;
         const elemPrice = +elem.dataset.price;
         const elemTitle = elem.dataset.title;
 
-        console.log("added to cart product with id: " + elemId +" "+ elemTitle);
-        //check if this product is already in the cart
-        let index = this.products.findIndex( (item) => {
-            return item.id == elemId;
-        } );
-        console.log(index);
+        let index = this.getIndex(elemId);
 
         if (index===-1) {
             //if not in the cart, add to cart with quantity of 1
             let cartItem = new CartItem({id: elemId, title: elemTitle, price: elemPrice,  quantity: 1});
-            console.log(cartItem);
             this.products.push(cartItem);
-            console.log(this.products);
             //add this item to mark-up
-            // this.toRender = [cartItem];
             document.querySelector(this.container).insertAdjacentHTML('beforeend', cartItem.render());
         } else {
             //if in the cart, update quantity
-            console.log("in the cart.");
             this.products[index].quantity++;
-            console.log(this.products);
             const cartItemElem = document.querySelector(`.cart-item[data-id="${elemId}"]`);
-            cartItemElem.querySelector(`.cartItemQuantity`).textContent = this.products[index].quantity;
-            cartItemElem.querySelector(`.cartItemTotalPrice`).textContent = this.products[index].quantity*this.products[index].price;
+            this.updateQuantity(cartItemElem, index);
+            this.updateTotal(cartItemElem, index);
         }
+        this.renderCartTotal();
+        this.handleEmptyCart();
+
     }
 
     removeProduct(elem) {
-        console.log(elem);
         const elemId = +elem.dataset.id;
 
-        let index = this.products.findIndex( (item) => {
-            return item.id == elemId;
-        } );
-        console.log(index);
+        let index = this.getIndex(elemId);
+
         this.products[index].quantity--;
-        console.log(this.products[index].quantity);
         const cartItemElem = document.querySelector(`.cart-item[data-id="${elemId}"]`);
 
         if (this.products[index].quantity===0) {
@@ -269,39 +273,50 @@ class CartList extends List {
             cartItemElem.remove();
         } else {
             //update the mark-up to reflect the reduced quantity
-            cartItemElem.querySelector(`.cartItemQuantity`).textContent = this.products[index].quantity;
-            cartItemElem.querySelector(`.cartItemTotalPrice`).textContent = this.products[index].quantity*this.products[index].price;
+            this.updateQuantity(cartItemElem, index);
+            this.updateTotal(cartItemElem, index);
         }
-        console.log(this.products);
+        this.renderCartTotal();
+        this.handleEmptyCart();
     }
 
-    // updateCart(elem) {
-    //     console.log("Updating cart element..." + elem);
-    //     console.log(elem);
-    //     const elemId = +elem.dataset.id;
+    handleEmptyCart() {
+        if (this.cartIsEmpty()) {
+            console.log("the cart is empty");
+            this.showCartEmptyMessage();
+        } else {
+            this.removeCartIsEmptyMessage();
+        }
+    }
 
-    //     let index = this.products.findIndex( (item) => {
-    //         return item.id == elemId;
-    //     } );
-    //     console.log(index);
-    //     //if the item is not in the cart, then remove from the mark-up
-    //     const cartItemElem = document.querySelector(`div.cart-item[data-id="${elemId}"]`);
+    cartIsEmpty() {
+        return this.products.length === 0; 
+    }
 
-    //     if (cartItemElem) {
-    //         if (index===-1) {
-    //         cartItemElem.remove();
-    //         } else {
-    //             //if the item is in the cart, update quantity and total price in the cart item
-    //             console.log(elem);
-    //             cartItemElem.querySelector(`.cartItemQuantity`).textContent = this.products[index].quantity;
-    //             cartItemElem.querySelector(`.cartItemTotalPrice`).textContent = this.products[index].quantity*this.products[index].price;
-    //         }
-    //     }
+    showCartEmptyMessage() {
+        console.log("starting showCartEmptyMessage() method")
+        document.querySelector(this.container).innerHTML = '<p id="emptyCart" style="text-align:right">The cart is empty</p>';
+    }
 
-    //     this.toRender.forEach( cartItem => {
-    //         document.querySelector(this.container).insertAdjacentHTML('beforeend', cartItem.render() );
-    //     });
-    // }
+    removeCartIsEmptyMessage() {
+        try {
+            document.querySelector('#emptyCart').remove();
+        } catch {
+            console.log("the cart is not empty");
+        }
+    }
+
+    getIndex(elemId) {
+        return this.products.findIndex( item => item.id == elemId );
+    }
+
+    updateQuantity(cartItemElem, index) {
+        cartItemElem.querySelector(`.cartItemQuantity`).textContent = this.products[index].quantity;
+    }
+
+    updateTotal(cartItemElem, index) {
+        cartItemElem.querySelector(`.cartItemTotalPrice`).textContent = this.products[index].quantity*this.products[index].price;
+    }
 }
 
 let mapping = {
@@ -313,7 +328,4 @@ let list = new ProductList();
 console.log(list);
 let myCart = new CartList();
 console.log(myCart);
-console.log(myCart.container);
-console.log(document.querySelector(myCart.container));  
-
 
