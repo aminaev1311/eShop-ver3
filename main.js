@@ -148,6 +148,7 @@ class ProductList extends List {
         document.querySelector('.search__input').addEventListener('input', (event) => {
             let term = event.target.value;
             this.search(term);
+            this.displayNothingFound();
         });
     }
 
@@ -165,6 +166,29 @@ class ProductList extends List {
             }
         });
     }
+
+    displayNothingFound() {
+    try {
+        document.querySelector('#nothingFound').remove();
+    } catch {
+
+    }
+    
+    let hiddenItemsCount = 0;
+    document.querySelectorAll(".product-item").forEach( item => { 
+        if (item.classList.contains('invisible')) hiddenItemsCount++;
+    });
+
+    if (hiddenItemsCount===this.products.length) { //all the items are invisible, i.e. nothing was found
+        document.querySelector('.products').insertAdjacentHTML('beforeend', "<p id='nothingFound'>Nothing found</p>");
+    } else {
+        try {
+            document.querySelector('#nothingFound').remove();
+        } catch {
+
+        }
+    }
+}
 }
 
 class CartList extends List {
@@ -227,7 +251,11 @@ class CartList extends List {
         } catch {
             (err) => console.log(err);
         }
-        document.querySelector(this.container).insertAdjacentHTML('beforeend', `<p id="total" style="text-align:right">The total is ${this.calculateTotal()}</p>`);
+        document.querySelector(this.container).insertAdjacentHTML('beforeend', 
+        `<div style="text-align:right" id="total">
+            <p>The total is ${this.calculateTotal()}</p>
+            <a href="cart.html">Detailed cart</a>
+        </div>`);
     }
 
     calculateTotal() {
@@ -328,4 +356,5 @@ let list = new ProductList();
 console.log(list);
 let myCart = new CartList();
 console.log(myCart);
+
 

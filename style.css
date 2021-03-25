@@ -105,6 +105,10 @@ body {
           align-items: center;
 }
 
+.cart-item__desc {
+  margin-left: 10px;
+}
+
 .cart-items {
   width: 350px;
   padding: 10px;
