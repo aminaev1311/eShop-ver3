@@ -168,27 +168,26 @@ class ProductList extends List {
     }
 
     displayNothingFound() {
-    try {
-        document.querySelector('#nothingFound').remove();
-    } catch {
-
-    }
-    
-    let hiddenItemsCount = 0;
-    document.querySelectorAll(".product-item").forEach( item => { 
-        if (item.classList.contains('invisible')) hiddenItemsCount++;
-    });
-
-    if (hiddenItemsCount===this.products.length) { //all the items are invisible, i.e. nothing was found
-        document.querySelector('.products').insertAdjacentHTML('beforeend', "<p id='nothingFound'>Nothing found</p>");
-    } else {
         try {
             document.querySelector('#nothingFound').remove();
         } catch {
 
         }
+        
+        let hiddenItemsCount = 0;
+        document.querySelectorAll(".product-item").forEach( item => { 
+            if (item.classList.contains('invisible')) hiddenItemsCount++;
+        });
+
+        if (hiddenItemsCount===this.products.length) { //all the items are invisible, i.e. nothing was found
+            document.querySelector('.products').insertAdjacentHTML('beforeend', "<p id='nothingFound'>Nothing found</p>");
+        } else {
+            try {
+                document.querySelector('#nothingFound').remove();
+            } catch {
+            }
+        }
     }
-}
 }
 
 class CartList extends List {
@@ -231,7 +230,8 @@ class CartList extends List {
         document.querySelector(".products").addEventListener('click', event => {
             //if it is a buy button
             if (event.target.classList.contains("buy-btn")) {
-                this.addProduct(event.target);
+                // this.addProduct(event.target);
+                this.asyncAddProduct(event.target);
                 // this.updateCart(event.target);
             }
         });
@@ -239,7 +239,8 @@ class CartList extends List {
         document.querySelector(".cart").addEventListener('click', event => {
             //if it is a buy button
             if (event.target.classList.contains("del-btn")) {
-                this.removeProduct(event.target);
+                // this.removeProduct(event.target);
+                this.asyncRemoveProduct(event.target)
             }
         });
     }
@@ -284,7 +285,36 @@ class CartList extends List {
         }
         this.renderCartTotal();
         this.handleEmptyCart();
+    }
 
+    asyncAddProduct(elem) {
+        this.getData(API + 'addToBasket.json').then( data => {
+            if (data.result === 1) {
+                const elemId = +elem.dataset.id;
+                const elemPrice = +elem.dataset.price;
+                const elemTitle = elem.dataset.title;
+
+                let index = this.getIndex(elemId);
+
+                if (index===-1) {
+                    //if not in the cart, add to cart with quantity of 1
+                    let cartItem = new CartItem({id: elemId, title: elemTitle, price: elemPrice,  quantity: 1});
+                    this.products.push(cartItem);
+                    //add this item to mark-up
+                    document.querySelector(this.container).insertAdjacentHTML('beforeend', cartItem.render());
+                } else {
+                    //if in the cart, update quantity
+                    this.products[index].quantity++;
+                    const cartItemElem = document.querySelector(`.cart-item[data-id="${elemId}"]`);
+                    this.updateQuantity(cartItemElem, index);
+                    this.updateTotal(cartItemElem, index);
+                }
+                this.renderCartTotal();
+                this.handleEmptyCart();
+            } else {
+                console.log("Error. Cannot add to the cart!");
+            }
+        });
     }
 
     removeProduct(elem) {
@@ -308,9 +338,35 @@ class CartList extends List {
         this.handleEmptyCart();
     }
 
+    asyncRemoveProduct(elem) {
+        this.getData(API + 'deleteFromBasket.json').then( data => {
+            if (data.result === 1) {
+                const elemId = +elem.dataset.id;
+
+                let index = this.getIndex(elemId);
+
+                this.products[index].quantity--;
+                const cartItemElem = document.querySelector(`.cart-item[data-id="${elemId}"]`);
+
+                if (this.products[index].quantity===0) {
+                    this.products.splice(index, 1);//remove the product from an array
+                    //remove it from the mark-up
+                    cartItemElem.remove();
+                } else {
+                    //update the mark-up to reflect the reduced quantity
+                    this.updateQuantity(cartItemElem, index);
+                    this.updateTotal(cartItemElem, index);
+                }
+                this.renderCartTotal();
+                this.handleEmptyCart();
+            } else {
+                console.log("Error. Cannot remove from the cart!");
+            }
+        });
+    }
+
     handleEmptyCart() {
         if (this.cartIsEmpty()) {
-            console.log("the cart is empty");
             this.showCartEmptyMessage();
         } else {
             this.removeCartIsEmptyMessage();
@@ -322,7 +378,6 @@ class CartList extends List {
     }
 
     showCartEmptyMessage() {
-        console.log("starting showCartEmptyMessage() method")
         document.querySelector(this.container).innerHTML = '<p id="emptyCart" style="text-align:right">The cart is empty</p>';
     }
 
@@ -330,7 +385,6 @@ class CartList extends List {
         try {
             document.querySelector('#emptyCart').remove();
         } catch {
-            console.log("the cart is not empty");
         }
     }
 
