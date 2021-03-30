@@ -2,31 +2,59 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>eShop</title>
+    <title>eShop ver4 Vue</title>
     <link rel="stylesheet" href="style.css">
     <script defer src="https://use.fontawesome.com/releases/v5.7.2/js/all.js" integrity="sha384-0pzryjIRos8mFBWMzSSZApWtPl/5++eIfzYmTgBBmXYdhvxPc+XcFEk+zJwDgWbP" crossorigin="anonymous"></script>
 </head>
 <body>
-    <header class="header">
-        <div class="header__left">
-            <h2 class="header__left-text">The best eShop ever!</h2>
-        </div>
-        <div class="header__right">
-            <div class="search">
-                <input type="text" class="search__input">
-                <button class="search-btn"><i class="fas fa-search"></i></button>
+    <div id="app">
+        <header class="header">
+            <div class="header__left">
+                <h2 class="header__left-text">The best eShop ever!</h2>
             </div>
-            <div class="cart">
-                <button class="cart-btn">Корзина</button>
-                <div class="cart-items invisible">
+            <div class="header__right">
+                <div class="search">
+                    <input type="text" class="search__input" v-model="find" @input="search()">
+                    <!-- <button class="search-btn"><i class="fas fa-search"></i></button> -->
+                </div>
+                <div class="cart">
+                    <button class="cart-btn" @click="isVisibleCart = !isVisibleCart">Корзина</button>
+                    <div class="cart-items" v-if="isVisibleCart">
+                        <div class="" v-if="cart.length===0" style="color:black">Your cart is empty</div>
+                        <div class="cart-item" data-id="id" :data-title="title" :data-price="price" :data-quantity="quantity" v-for="{id, title, price, quantity, img='https://via.placeholder.com/50x50'} of cart" :key="id">
+                            <div class="cart-item__left">
+                                <img :src=`${img}+?text=${title}`>
+                                <div class="cart-item__desc">
+                                    <h3>{{title}}</h3>
+                                    <h5>q-ty: <span class="cartItemQuantity">{{quantity}}</span></h5>
+                                    <p>each: {{price}}</p>
+                                </div>
+                            </div>
+                            <div class="cart-item__right">
+                                <h3 class="cartItemTotalPrice">{{price*quantity}}</h3>
+                                <button class="del-btn" :data-id="id" :data-title="title" :data-price="price" :data-quantity="quantity" @click="removeFromCart({id, title, price, quantity, img})">X</button>
+                            </div>
+                        </div>
+                        <div class="">TOTAL: {{ cartTotal }}</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <div class="products">
+            <div class="" v-if="filteredProducts.length===0" style="justify-self: center;">No products with this title found</div>
+            <div class="product-item" :data-id="id" :data-title="title" :data-price="price" v-for="{id, title, price, img='https://via.placeholder.com/200x150'} of filteredProducts" :key="id">
+                <img :src="`${img}+?text=${title}`">
+                <div class="product-item__desc">
+                    <h3>{{title}}</h3>
+                    <p>{{price}}</p>
+                    <button class="buy-btn" :data-id="id" :data-title="title" :data-price="price" @click="addToCart({id, title, price, img})">Add to cart</button>
                 </div>
             </div>
         </div>
-    </header>
-    <!-- <h1 class="products-heading">Products</h1> -->
-    <div class="products"></div>
+    </div>
     <script>
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
     <script src="main.js"></script>
 </body>
 </html>
